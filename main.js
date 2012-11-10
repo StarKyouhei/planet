@@ -18,83 +18,172 @@ var baseThree = function(content,pass){
 	var nowStatus = "initPos";
 	var moving = false;
 	var targetPlanet;
-	var planetRotationY = -0.002,planetMoveX,planetMoveY;
+	var planetRotationY,planetRotationX,planetMoveX,planetMoveY;
 	var init = function(){
 		g.setTargetSize(content.id);
 		group = new THREE.Object3D();
-		mesh  = pass.makePlanet({size:40,property:{color: 0xF4A460}});
+		mesh  = pass.makePlanet({size:40});//,property:{color: 0xF4A460}});
+		mesh.rotation = {x: -0.9, y: 0, z: 0};
 		targetPlanet = mesh;
 		
 		mesh2 = pass.makePlanet({size:10,property:{color: 0x6495ED}});
 		mesh2.position.x = -100;
 		mesh2.position.y = 50;
 		mesh2.position.z = -10;
-		testMesh = pass.testPlanet();
-		testMesh.position.x  += 100;
-		group.add( testMesh );
 		
-		light = new THREE.DirectionalLight(0xffffcc, 1.4);
+		mesh3 = pass.makePlanet({size:20,property:{color: 0x6666ccD}});
+		mesh3.position.x = 150;
+		mesh3.position.z = 50;
+		
+		mesh4 = pass.makePlanet({size:10,property:{color: 0x99ffff}});
+		mesh4.position.x = 10;
+		mesh4.position.z = -50;
+		mesh4.position.y = -100;
+		
+		mesh5 = pass.makePlanet({size:10,property:{color: 0xcc6666}});
+		mesh5.position.x = -20;
+		mesh5.position.z = 50;
+		mesh5.position.y = 100;
+		
+		light = new THREE.DirectionalLight(0xffffcc, 1.2);
 		light.position = {x: 0.2, y: 0.2, z: -0.2};
 		
 		scene = new THREE.Scene();
 		scene.add(mesh);
 		scene.add(mesh2);
+		scene.add(mesh3);
+		scene.add(mesh4);
+		scene.add(mesh5);
 		scene.add(light);
 		scene.add(group);
+
 		starInit({m:400});
 		
 		renderer = new THREE.WebGLRenderer({antialias: true});
 		initCamera();
-		planetEvent([mesh,mesh2]);
+		planetEvent();
 		document.getElementById(content.id).appendChild(renderer.domElement);
 	};
 	that.init = init;
-	
+
 	var initCamera = function(){
 		var g = general();
 		camera = new THREE.PerspectiveCamera(40, g.winSize.x / g.winSize.y, 1, 1000);
 		camera.position.z = initPosZ;
 		camera.lookAt(targetPlanet.position);
+		/*camera.position.x = -120.00000000000063;
+		camera.position.y = 30.000000000000156;
+		camera.position.z = -100;
+		camera.rotation.x = -3.141592653589793;
+		camera.rotation.y = -0.6000000000000004;
+		camera.rotation.z = -3.141592653589793;*/
 		scene.add(camera);
 		renderer.setSize(g.winSize.x,g.winSize.y);
 		renderer.render(scene, camera);
 	};
-	
-	var planetEvent = function(args){
-		var meshArray = args;
+	var planetEvent = function(){
 		var x,y;
 		var vector,ray,intersects;
-		var arrLenght = meshArray.lenght;
-		for(var i = 0; i < arrLenght; i++){
-			meshArray[i].position.x = 2 * i;
-		    meshArray[i].position.z = -i;
-		}
 	    var projector = new THREE.Projector();
+	    $(renderer.domElement).mousemove(function(e){
+	    	if(!moving){
+		        intersects = intersectsContainer(e);
+		        if(intersects.length > 0){
+			        if(intersects[0].object.position.x === mesh.position.x){
+			        	console.log("1");
+			        }else if(intersects[0].object.position.x === mesh2.position.x){
+		        		console.log("2");
+					}else if(intersects[0].object.position.x === mesh3.position.x){
+		        		console.log("3");
+					}
+		        }else{
+		        	intersects = null;
+		  		}
+	    	}
+	    });
 		$(renderer.domElement).click(function(e){
 			if(!moving){
-				x =   (e.clientX / renderer.domElement.width) * 2 - 1;
-				y = - (e.clientY / renderer.domElement.height) * 2 + 1;
-		        vector = new THREE.Vector3(x, y, 1);
-		        projector.unprojectVector(vector, camera);
-		        ray = new THREE.Ray(camera.position, vector.subSelf(camera.position).normalize());
-		        intersects = ray.intersectObjects(meshArray);
-		        console.log("interpos:"+intersects[ 0 ].object.position.x);
-		        if(intersects[0].object.position.x === mesh.position.x){
-					targetPlanet = mesh;
-				}else if(intersects[0].object.position.x === mesh2.position.x){
-					targetPlanet = mesh2;
-				}
-	            cameraStatus();
-	            planetMove();
-				moving = true;
-	            if(nowStatus === "initPos"){
-		            planetClose();
-	            }else{
-	            	planetInitPos();
-	            }
-		        renderer.render(scene,camera);
+				intersects = intersectsContainer(e);
+		        if(intersects.length > 0){
+		        	if(nowStatus === "initPos"){
+				        if(intersects[0].object.position.x === mesh.position.x){
+							targetPlanet = mesh;
+						}else if(intersects[0].object.position.x === mesh2.position.x){
+							targetPlanet = mesh2;
+						}else if(intersects[0].object.position.x === mesh3.position.x){
+							targetPlanet = mesh3;
+						}else if(intersects[0].object.position.x === mesh4.position.x){
+							targetPlanet = mesh4;
+						}
+		        	}
+		            cameraStatus();
+		            planetMove();
+					moving = true;
+			        renderer.render(scene,camera);
+		        }
 			}
 		});
+		var intersectsContainer = function(e){
+			x =   (e.clientX / renderer.domElement.width) * 2 - 1;
+			y = - (e.clientY / renderer.domElement.height) * 2 + 1;
+	        vector = new THREE.Vector3(x, y, 1);
+	        projector.unprojectVector(vector, camera);
+	        ray = new THREE.Ray(camera.position, vector.subSelf(camera.position).normalize());
+	        return ray.intersectObjects(scene.children);
+		} ;
+	};
+	var planetMove = function(){
+		switch(targetPlanet){
+		case mesh:
+			planetMoveX = -0.3;
+			planetMoveY = 0;
+			planetRotationY = -0.002;
+			planetRotationX = 0.0002;
+			break;
+		case mesh2:
+			planetMoveX = -0.7;
+			planetMoveY = 0.2;
+			planetRotationY = -0.002;
+			planetRotationX = 0;
+			break;
+		case mesh3:
+			planetMoveX = 1.2;
+			planetMoveY = 0.1;
+			planetRotationY = 0.002;
+			planetRotationX = 0;
+			break;
+		case mesh4:
+			planetMoveX = 0.25;
+			planetMoveY = -0.3;
+			planetRotationY = 0.002;
+			planetRotationX = 0.001;
+			break;
+		default:
+			console.log("unset move!!");
+			break;
+		}
+		if(nowStatus === "initPos"){
+            planetClose();
+        }else{
+        	planetInitPos();
+        }
+	};
+	/*cameraEvent*/
+	var planetClose = function(){
+		if(camera.position.z == -100){
+			cancelAnimationFrame(animeHandle);
+			EventCallback();
+			return;
+    	}
+		camera.position.z += 1;
+		camera.position.x += planetMoveX;
+		camera.position.y += planetMoveY;
+		camera.rotation.y += planetRotationY;
+		camera.rotation.x += planetRotationX;
+		camera.rotation.z += 0.001;
+
+    	renderer.render(scene, camera);
+    	animeHandle = requestAnimationFrame(planetClose);
 	};
 	var cameraStatus = function(){
 		switch(camera.position.z){
@@ -108,42 +197,13 @@ var baseThree = function(content,pass){
 				console.log("unset Status!!");
 				break;
 		}
-		console.log("cameraP.x:"+camera.position.x);
-		console.log("cameraP.y:"+camera.position.y);
-		console.log("cameraP.z:"+camera.position.z);
-		console.log("cameraR.x:"+camera.rotation.x);
-		console.log("cameraR.y:"+camera.rotation.y);
-		console.log("cameraR.z:"+camera.rotation.z);
-	};
-	var planetMove = function(){
-		switch(targetPlanet){
-		case mesh:
-			planetMoveX = 0;
-			planetMoveY = 0;
-			break;
-		case mesh2:
-			planetMoveX = -0.4;
-			planetMoveY = 0.1;
-			break;
-		default:
-			console.log("unset move!!");
-			break;
-		}
-	};
-	
-	/*cameraEvent*/
-	var planetClose = function(){
-		if(camera.position.z == -100){
-			cancelAnimationFrame(animeHandle);
-			EventCallback();
-			return;
-    	}
-		camera.position.z += 1;
-		camera.position.x += planetMoveX;
-		camera.position.y += planetMoveY;
-		camera.rotation.y += planetRotationY;
-    	renderer.render(scene, camera);
-    	animeHandle = requestAnimationFrame(planetClose);
+		console.log(camera.position.z);
+		console.log(camera.position.x );
+		console.log(camera.position.y );
+		console.log(camera.position.z );
+		console.log(camera.rotation.x );
+		console.log(camera.rotation.y );
+		console.log(camera.rotation.z );
 	};
 	var planetInitPos = function(){
 		var pos = posDiff();
@@ -156,6 +216,10 @@ var baseThree = function(content,pass){
 		camera.position.y += -(planetMoveY *4);
 		camera.position.x += -(planetMoveX * 4);
 		camera.rotation.y += -(planetRotationY * 4);
+		camera.rotation.x += -(planetRotationX * 4);
+
+		camera.rotation.z -= 0.004;
+
 		renderer.render(scene, camera);
 		animeHandle = requestAnimationFrame(planetInitPos);
 	};
@@ -171,7 +235,7 @@ var baseThree = function(content,pass){
 		var m = args.m;
 		var geometry,mesh;
 		for ( var i = 0; i < m; i ++ ) {
-			wide = Math.random() * 3;
+			wide = Math.random() * 2;
 			geometry = new THREE.SphereGeometry(wide, 10, 10);
 			mesh = new THREE.Mesh( geometry, material );
 			mesh.position.x = 400 - Math.random() * 800;
@@ -191,12 +255,16 @@ var baseThree = function(content,pass){
 		return now;
 	};
 	var animeRotate = function(){
+		mesh.rotation.x += 0.00015;
+		mesh.rotation.z += 0.00015;
 		group.rotation.z += 0.00005;
 		renderer.render(scene, camera);
 		requestAnimationFrame(animeRotate);
 	};
 	var resize = function(){
-		initCamera();
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
 		console.log("resize");
 	};
 	that.resize = resize;
@@ -213,7 +281,31 @@ var baseThree = function(content,pass){
 
 var Planet = function(content,pass){
 	var pass = pass || {};
+	var canvasTexture = function(args){
+		var canvas = document.createElement( 'canvas' );
+		canvas.width = args.w;
+		canvas.height = args.h;
+		var context = canvas.getContext( '2d' );
+		var gradient = context.createLinearGradient(0,0,0,200);
+		gradient.addColorStop( 0, 'rgba(204,153,102,1)' );
+		gradient.addColorStop( 0.1, 'rgba(255,255,255,1)' );
+		gradient.addColorStop( 0.2, 'rgba(204,153,102,1)' );
+		gradient.addColorStop( 0.4, 'rgba(204,153,102,1)' );
+		gradient.addColorStop( 0.5, 'rgba(255,255,255,1)' );
+		gradient.addColorStop( 0.6, 'rgba(204,153,102,1)' );
+		gradient.addColorStop( 0.7, 'rgba(255,255,255,1)' );
+		gradient.addColorStop( 0.8, 'rgba(204,153,102,1)' );
+		gradient.addColorStop( 0.9, 'rgba(255,255,255,1)' );
+		gradient.addColorStop( 1, 'rgba(204,153,102,1)' );
+		context.fillStyle = gradient;
+		context.fillRect( 0, 0, canvas.width, canvas.height );
+		var shadowTexture = new THREE.Texture( canvas );
+		shadowTexture.needsUpdate = true;
+		return shadowTexture;
+	};
+
 	var makePlanet = function(args){
+		args.property = args.property || {map:canvasTexture({w:300,h:300})};
 		var divisions = 3;
 		var material = new THREE.MeshLambertMaterial(args.property);
 		var geometry = new THREE.SphereGeometry(args.size, 12, 12);
