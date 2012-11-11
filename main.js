@@ -1,12 +1,102 @@
 jQuery(function($) {
-	var three = baseThree({id:'canvas-wrapper'});
-		three.init();
-		three.animate();
+	var myappBase = appBase();
+		
 	$(window).resize(function(){
 		three.resize();
 		//three.test();
 	});
 });
+
+
+var controller = function(content,pass){
+	var pass = pass || {};
+	var that = {};
+	var three = baseThree({id:'canvas-wrapper'});
+
+	var index = function(){
+		three.init();
+		three.initCamera();
+		three.animate();
+	};
+	pass.index = index;
+	
+	var mesh2= function(){
+		three.init();
+		three.initCamera({
+			pos:{
+				x:-209.99999999999903,
+				y:60.00000000000031,
+				z:-100
+			},
+			rota:{
+				x:-3.141592653589793,
+				y:-0.6000000000000004,
+				z:-2.841592653589826
+			}
+		});
+		three.animate();
+	};
+	pass.mesh2 = mesh2;
+	
+	var test = function(){
+		alert("test");
+	};
+	pass.test = test;
+	
+	return that;
+};
+
+var model = function(content,pass){
+	var pass = pass || {};
+	var that = {};
+	
+	var indexModel = function(){
+
+	};
+	pass.indexModel = indexModel;
+	
+	var planet1Model = function(){
+		
+	};
+	pass.planet1Model = planet1Model;
+	
+	return that;
+};
+
+
+var appBase = function(content,pass){
+	var pass = pass || {};
+	var that = controller(content,pass);
+	/*model分けるべきかも*/
+	that = model(content,pass);
+	
+	var url = function(){
+		var after = $(location).attr('hash');
+		if(after == ""){
+			return "index";
+		}else{
+			var hash = after.replace("#","");
+			return hash;
+		}
+	};
+	
+	var call = function(){
+		//try{
+			var model = url() + "Model";
+			(pass[url()])();
+			try{
+				(pass[model])();
+			}catch(e){}
+		/*}catch(e){
+			console.log(e);
+			file:///Library/WebServer/Documents/test/jqueryload/index.html
+		}*/
+	};
+	call();
+	
+	return that;
+};
+
 
 var baseThree = function(content,pass){
 	var pass = pass || {};
@@ -47,7 +137,7 @@ var baseThree = function(content,pass){
 		mesh5.position.y = 100;
 		
 		light = new THREE.DirectionalLight(0xffffcc, 1.2);
-		light.position = {x: 0.2, y: 0.2, z: -0.2};
+		light.position = {x: 0.2, y: 0.0, z: -0.2};
 		
 		scene = new THREE.Scene();
 		scene.add(mesh);
@@ -67,15 +157,24 @@ var baseThree = function(content,pass){
 	};
 	that.init = init;
 
-	var initCamera = function(){
+	var initCamera = function(args){
 		var g = general();
 		camera = new THREE.PerspectiveCamera(40, g.winSize.x / g.winSize.y, 1, 1000);
 		camera.position.z = initPosZ;
 		camera.lookAt(targetPlanet.position);
+		if(args){
+			camera.position.x = args.pos.x;
+			camera.position.y = args.pos.y;
+			camera.position.z = args.pos.z;
+			camera.rotation.x = args.rota.x;
+			camera.rotation.y = args.rota.y;
+			camera.rotation.z = args.rota.z;
+		}
 		scene.add(camera);
 		renderer.setSize(g.winSize.x,g.winSize.y);
 		renderer.render(scene, camera);
 	};
+	that.initCamera = initCamera;
 	
 	var planetEvent = function(){
 		var x,y;
@@ -112,6 +211,7 @@ var baseThree = function(content,pass){
 							targetPlanet = mesh;
 						}else if(intersects[0].object.position.x === mesh2.position.x){
 							targetPlanet = mesh2;
+							location.hash = 'mesh2';
 						}else if(intersects[0].object.position.x === mesh3.position.x){
 							targetPlanet = mesh3;
 						}else if(intersects[0].object.position.x === mesh4.position.x){
@@ -146,6 +246,13 @@ var baseThree = function(content,pass){
 				console.log("unset Status!!");
 				break;
 		}
+		console.log(camera.position.z);
+		console.log(camera.position.x );
+		console.log(camera.position.y );
+		console.log(camera.position.z );
+		console.log(camera.rotation.x );
+		console.log(camera.rotation.y );
+		console.log(camera.rotation.z );
 	};
 	var planetMove = function(){
 		switch(targetPlanet){
