@@ -12,12 +12,13 @@ var baseThree = function(content,pass){
 	var pass = pass || {};
 	var that = Planet(content,pass);
 	var g = general();
+	var display = displayBase();
 	var renderer,camera,scene,light,animeHandle;
 	var mesh,group;
-	var initPosZ = -400;
+	var initPosZ  = -400;
 	var nowStatus = "initPos";
 	var moving = false;
-	var targetPlanet;
+	var targetPlanet,targetDisplay;
 	var planetRotationY,planetRotationX,planetMoveX,planetMoveY;
 	var init = function(){
 		g.setTargetSize(content.id);
@@ -71,16 +72,11 @@ var baseThree = function(content,pass){
 		camera = new THREE.PerspectiveCamera(40, g.winSize.x / g.winSize.y, 1, 1000);
 		camera.position.z = initPosZ;
 		camera.lookAt(targetPlanet.position);
-		/*camera.position.x = -120.00000000000063;
-		camera.position.y = 30.000000000000156;
-		camera.position.z = -100;
-		camera.rotation.x = -3.141592653589793;
-		camera.rotation.y = -0.6000000000000004;
-		camera.rotation.z = -3.141592653589793;*/
 		scene.add(camera);
 		renderer.setSize(g.winSize.x,g.winSize.y);
 		renderer.render(scene, camera);
 	};
+	
 	var planetEvent = function(){
 		var x,y;
 		var vector,ray,intersects;
@@ -89,16 +85,22 @@ var baseThree = function(content,pass){
 	    	if(!moving){
 		        intersects = intersectsContainer(e);
 		        if(intersects.length > 0){
-			        if(intersects[0].object.position.x === mesh.position.x){
-			        	console.log("1");
-			        }else if(intersects[0].object.position.x === mesh2.position.x){
-		        		console.log("2");
-					}else if(intersects[0].object.position.x === mesh3.position.x){
-		        		console.log("3");
-					}
+		        	g.showPointer(renderer.domElement);
+		        	if(nowStatus === "initPos"){
+				        if(intersects[0].object.position.x === mesh.position.x){
+				        	targetDisplay = "mesh";
+				        }else if(intersects[0].object.position.x === mesh2.position.x){
+			        		console.log("2");
+						}else if(intersects[0].object.position.x === mesh3.position.x){
+			        		console.log("3");
+						}
+				        display.planetExample({selector:"#"+targetDisplay,Event:e});
+		        	}
 		        }else{
 		        	intersects = null;
-		  		}
+		        	display.planetExampleHide({selector:"#"+targetDisplay});
+		        	g.hidePointer(renderer.domElement);
+				}
 	    	}
 	    });
 		$(renderer.domElement).click(function(e){
@@ -131,6 +133,19 @@ var baseThree = function(content,pass){
 	        ray = new THREE.Ray(camera.position, vector.subSelf(camera.position).normalize());
 	        return ray.intersectObjects(scene.children);
 		} ;
+	};
+	var cameraStatus = function(){
+		switch(camera.position.z){
+			case initPosZ:
+				nowStatus = "initPos";
+				break;
+			case -100:
+				nowStatus = "closePlanet";
+				break;
+			default:
+				console.log("unset Status!!");
+				break;
+		}
 	};
 	var planetMove = function(){
 		switch(targetPlanet){
@@ -167,12 +182,13 @@ var baseThree = function(content,pass){
         }else{
         	planetInitPos();
         }
+		display.planetExampleHide({selector:"#"+targetDisplay});
 	};
 	/*cameraEvent*/
 	var planetClose = function(){
 		if(camera.position.z == -100){
 			cancelAnimationFrame(animeHandle);
-			EventCallback();
+			EventCallback(targetDisplay);
 			return;
     	}
 		camera.position.z += 1;
@@ -184,26 +200,6 @@ var baseThree = function(content,pass){
 
     	renderer.render(scene, camera);
     	animeHandle = requestAnimationFrame(planetClose);
-	};
-	var cameraStatus = function(){
-		switch(camera.position.z){
-			case initPosZ:
-				nowStatus = "initPos";
-				break;
-			case -100:
-				nowStatus = "closePlanet";
-				break;
-			default:
-				console.log("unset Status!!");
-				break;
-		}
-		console.log(camera.position.z);
-		console.log(camera.position.x );
-		console.log(camera.position.y );
-		console.log(camera.position.z );
-		console.log(camera.rotation.x );
-		console.log(camera.rotation.y );
-		console.log(camera.rotation.z );
 	};
 	var planetInitPos = function(){
 		var pos = posDiff();
@@ -217,16 +213,17 @@ var baseThree = function(content,pass){
 		camera.position.x += -(planetMoveX * 4);
 		camera.rotation.y += -(planetRotationY * 4);
 		camera.rotation.x += -(planetRotationX * 4);
-
 		camera.rotation.z -= 0.004;
-
 		renderer.render(scene, camera);
 		animeHandle = requestAnimationFrame(planetInitPos);
 	};
-	var EventCallback = function(){
+	var EventCallback = function(args){
 		moving = false;
 		cameraStatus();
-		console.log("finish Event:"+nowStatus)
+		console.log("finish Event:"+nowStatus);
+		if(args){
+			display.loadEvent();
+		}
 	};
 	/*set Star*/
 	var starInit = function(args){
@@ -328,7 +325,30 @@ var Planet = function(content,pass){
 	
 	return pass;
 };
-
+var displayBase = function(){
+	that = {};
+	var planetExample = function(args){
+		if($(args.selector).css("display") == "none"){
+    		$(args.selector).fadeIn("slow");
+        	$(args.selector).css({top:args.Event.clientY - 100,left:args.Event.clientX-50});
+    	}
+	};
+	that.planetExample = planetExample;
+	
+	var planetExampleHide = function(args){
+    	if($(args.selector).css("display") != "none"){
+    		$(args.selector).fadeOut(1000);
+    	}
+	};
+	that.planetExampleHide = planetExampleHide;
+	
+	var loadEvent = function(){
+		console.log("display loadEvent");
+	};
+	that.loadEvent = loadEvent;
+	
+	return that;
+};
 var general = function(){
 	var that ={};
 	var winSize = {
@@ -336,6 +356,16 @@ var general = function(){
 		y:$(window).height()
 	};
 	that.winSize = winSize;
+	
+	var showPointer = function(args){
+		$(args).css('cursor', 'pointer');
+	};
+	that.showPointer = showPointer;
+	
+	var hidePointer = function(args){
+		$(args).css('cursor', 'default');
+	}
+	that.hidePointer = hidePointer;
 	
 	var setTargetSize = function(args){
 		var targetId = "#"+args.id;
